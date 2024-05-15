@@ -2,6 +2,7 @@ Signal slot components like Qt, base on [[sigslot]](https://github.com/palacaze/
 
 Examples:
 
+```
 #include <iostream>
 #include "signal.hpp"
 #include "executor.hpp"
@@ -78,3 +79,4 @@ int main()
 
     return 0;
 }
+```
