@@ -1,4 +1,4 @@
-# Signal slot components a replacement for Qt's signal-slot system, base on [[sigslot]](https://github.com/palacaze/sigslot)
+# Signal slot components a replacement for Qt's signal-slot system, base on [sigslot](https://github.com/palacaze/sigslot)
 
 ### Examples:
 
