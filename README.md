@@ -1,6 +1,6 @@
 Signal slot components like Qt, base on [[sigslot]](https://github.com/palacaze/sigslot)
 
-Examples:
+### Examples:
 
 ```
 #include <iostream>
@@ -81,7 +81,7 @@ int main()
 }
 ```
 
-## Dependence
+### Dependence
 sigslot: https://github.com/palacaze/sigslot
 
 thread-pool: https://github.com/bshoshany/thread-pool
