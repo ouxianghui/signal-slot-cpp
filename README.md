@@ -80,3 +80,8 @@ int main()
     return 0;
 }
 ```
+
+## Dependence
+sigslot: https://github.com/palacaze/sigslot
+
+thread-pool: https://github.com/bshoshany/thread-pool
