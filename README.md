@@ -1,6 +1,6 @@
 # signal-slot component, a replacement for Qt's signal-slot system, base on [sigslot](https://github.com/palacaze/sigslot)
 
-### Examples:
+### Examples
 
 ```
 #include <iostream>
@@ -81,7 +81,7 @@ int main()
 }
 ```
 
-### Dependence
+### Dependences
 sigslot: https://github.com/palacaze/sigslot
 
 thread-pool: https://github.com/bshoshany/thread-pool
