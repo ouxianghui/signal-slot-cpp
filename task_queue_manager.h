@@ -8,42 +8,42 @@
 
 namespace core {
 
-class TaskQueue;
+    class TaskQueue;
 
-class TaskQueueManager {
-public:
-    static std::unique_ptr<TaskQueueManager>& instance();
+    class TaskQueueManager {
+    public:
+        static std::unique_ptr<TaskQueueManager>& instance();
 
-    ~TaskQueueManager();
+        ~TaskQueueManager();
 
-    void create(const std::vector<std::string>& nameList);
+        void create(const std::vector<std::string>& nameList);
 
-    TaskQueue* queue(const std::string& name);
+        TaskQueue* queue(const std::string& name);
 
-    bool hasQueue(const std::string& name);
+        bool hasQueue(const std::string& name);
 
-private:
-    void clear();
+    private:
+        void clear();
 
-    bool exist(const std::string& name);
+        bool exist(const std::string& name);
 
-private:
-    TaskQueueManager();
+    private:
+        TaskQueueManager();
 
-    TaskQueueManager(TaskQueueManager&&) = delete;
+        TaskQueueManager(TaskQueueManager&&) = delete;
 
-    TaskQueueManager& operator=(TaskQueueManager&&) = delete;
+        TaskQueueManager& operator=(TaskQueueManager&&) = delete;
 
-    TaskQueueManager(const TaskQueueManager&) = delete;
+        TaskQueueManager(const TaskQueueManager&) = delete;
 
-    TaskQueueManager& operator=(const TaskQueueManager&) = delete;
+        TaskQueueManager& operator=(const TaskQueueManager&) = delete;
 
-private:
-    std::mutex m_mutex;
+    private:
+        std::mutex m_mutex;
 
-    std::unordered_map<std::string, std::unique_ptr<TaskQueue>> m_queueMap;
+        std::unordered_map<std::string, std::unique_ptr<TaskQueue>> m_queueMap;
 
-};
+    };
 
 }
 

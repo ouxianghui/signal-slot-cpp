@@ -76,7 +76,6 @@ int main()
     MyParam param;
     sig(param);
 
-
     MyClass myc;
 
     sigslot::signal<int, int> sum;
