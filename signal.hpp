@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstring>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <type_traits>
@@ -16,8 +17,12 @@
 #include <iostream>
 #include <assert.h>
 
+namespace core {
+    class TaskQueue;
+}
+
 namespace sigslot {
-    class i_executor;
+    //class i_executor;
 
     template <typename, typename...>
     class signal_base;
@@ -817,10 +822,10 @@ namespace sigslot {
         public:
             using base_types = trait::typelist<Args...>;
 
-            explicit slot_base(cleanable& c, uint32_t type, i_executor* executor, group_id gid)
+            explicit slot_base(cleanable& c, uint32_t type, core::TaskQueue* queue, group_id gid)
             : slot_state(gid)
             , m_cleaner(c)
-            , m_executor(executor) {
+            , m_queue(queue) {
                 m_singleshot = type & connection_type::singleshot_connection;
                 uint32_t t = type;
                 t &= ~connection_type::unique_connection;
@@ -903,9 +908,9 @@ namespace sigslot {
             }
 
             inline bool is_current() {
-                assert(this->m_executor);
+                assert(this->m_queue);
                 auto is_current = false;
-                if (this->m_executor->is_current()) {
+                if (this->m_queue->isCurrent()) {
                     is_current = true;
                 }
                 return is_current;
@@ -944,7 +949,7 @@ namespace sigslot {
         protected:
             std::atomic<uint32_t> m_type = {0};
             std::atomic_bool m_unique = {false};
-            i_executor* m_executor = nullptr;
+            core::TaskQueue* m_queue = nullptr;
             std::atomic_bool m_singleshot = {false};
             std::atomic_bool m_emitted = {false};
 
@@ -961,8 +966,8 @@ namespace sigslot {
         public:
             using this_type = slot<Func, Args...>;
             template <typename F, typename Gid>
-            constexpr slot(cleanable& c, F&& f, uint32_t type, i_executor* executor, Gid gid)
-            : slot_base<Args...>(c, type, executor, gid)
+            constexpr slot(cleanable& c, F&& f, uint32_t type, core::TaskQueue* queue, Gid gid)
+            : slot_base<Args...>(c, type, queue, gid)
             , func{std::forward<F>(f)} {}
 
         protected:
@@ -982,9 +987,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1002,8 +1007,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1012,9 +1018,11 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1040,8 +1048,8 @@ namespace sigslot {
         public:
             using this_type = slot_extended<Func, Args...>;
             template <typename F>
-            constexpr slot_extended(cleanable& c, F&& f, uint32_t type, i_executor* executor, group_id gid)
-            : slot_base<Args...>(c, type, executor, gid)
+            constexpr slot_extended(cleanable& c, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
+            : slot_base<Args...>(c, type, queue, gid)
             , func{std::forward<F>(f)} {}
 
             connection conn;
@@ -1063,9 +1071,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1083,8 +1091,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1093,9 +1102,11 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1123,8 +1134,8 @@ namespace sigslot {
         public:
             using this_type = slot_pmf<Ptr, Pmf, Args...>;
             template <typename P, typename F>
-            constexpr slot_pmf(cleanable& c, P&& p, F&& f, uint32_t type, i_executor* executor, group_id gid)
-            : slot_base<Args...>(c, type, executor, gid)
+            constexpr slot_pmf(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
+            : slot_base<Args...>(c, type, queue, gid)
             , ptr{std::forward<P>(p)}
             , pmf{std::forward<F>(f)} {}
 
@@ -1145,9 +1156,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1165,8 +1176,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             ((*(this->ptr)).*(this->pmf))(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1175,9 +1187,11 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1208,7 +1222,7 @@ namespace sigslot {
         public:
             using this_type = slot_pmf_extended<Pmf, Ptr, Args...>;
             template <typename P, typename F>
-            constexpr slot_pmf_extended(cleanable& c, P&& p, F&& f, uint32_t type, i_executor* executor, group_id gid)
+            constexpr slot_pmf_extended(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* executor, group_id gid)
             : slot_base<Args...>(c, type, executor, gid)
             , ptr{std::forward<P>(p)}
             , pmf{std::forward<F>(f)} {}
@@ -1232,9 +1246,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1252,8 +1266,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             ((*(this->ptr)).*(this->pmf))(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1262,9 +1277,11 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1297,8 +1314,8 @@ namespace sigslot {
         public:
             using this_type = slot_tracked<Func, WeakPtr, Args...>;
             template <typename P, typename F>
-            constexpr slot_tracked(cleanable& c, P&& p, F&& f, uint32_t type, i_executor* executor, group_id gid)
-            : slot_base<Args...>(c, type, executor, gid)
+            constexpr slot_tracked(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
+            : slot_base<Args...>(c, type, queue, gid)
             , ptr{std::forward<P>(p)}
             , func{std::forward<F>(f)} {}
 
@@ -1328,9 +1345,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1348,8 +1365,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1358,9 +1376,11 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1393,8 +1413,8 @@ namespace sigslot {
         public:
             using this_type = slot_pmf_tracked<Pmf, WeakPtr, Args...>;
             template <typename P, typename F>
-            constexpr slot_pmf_tracked(cleanable& c, P&& p, F&& f, uint32_t type, i_executor* executor, group_id gid)
-            : slot_base<Args...>(c, type, executor, gid)
+            constexpr slot_pmf_tracked(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
+            : slot_base<Args...>(c, type, queue, gid)
             , ptr{std::forward<P>(p)}
             , pmf{std::forward<F>(f)} {}
 
@@ -1424,9 +1444,9 @@ namespace sigslot {
                         std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                     }
                 } else if (type == connection_type::queued_connection) {
-                    assert(this->m_executor);
-                    if (this->m_executor) {
-                        this->m_executor->async([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), sp, args...]() mutable {
+                    assert(this->m_queue);
+                    if (this->m_queue) {
+                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), sp, args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1444,8 +1464,9 @@ namespace sigslot {
                         std::cerr << "thread is nullptr" << std::endl;
                     }
                 } else if (type == connection_type::blocking_queued_connection) {
-                    assert(this->m_executor);
-                    this->m_executor->sync([this, sp, args...]() mutable {
+                    auto promise = std::promise<void>();
+                    assert(this->m_queue);
+                    this->m_queue->postTask([this, sp, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             (*sp.*(this->pmf))(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1454,9 +1475,10 @@ namespace sigslot {
                         } else {
                             std::cerr << "canceling slot execution due to connection being disconnected" << std::endl;
                         }
+                        promise.set_value();
                     });
                 } else {
-                    std::cerr << "illegal connection type or invalid scheduling thread" << std::endl;
+                    std::cerr << "illegal connection type" << std::endl;
                 }
             }
 
@@ -1587,9 +1609,9 @@ namespace sigslot {
          */
         template <typename Callable>
         std::enable_if_t<trait::is_callable_v<arg_list, Callable>, connection>
-        connect(Callable&& c, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect(Callable&& c, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using slot_t = detail::slot<Callable, T...>;
-            auto s = make_slot<slot_t>(std::forward<Callable>(c), type, executor, gid);
+            auto s = make_slot<slot_t>(std::forward<Callable>(c), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_callable(c);
             });
@@ -1616,9 +1638,9 @@ namespace sigslot {
          */
         template <typename Callable>
         std::enable_if_t<trait::is_callable_v<ext_arg_list, Callable>, connection>
-        connect_extended(Callable&& c, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect_extended(Callable&& c, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using slot_t = detail::slot_extended<Callable, T...>;
-            auto s = make_slot<slot_t>(std::forward<Callable>(c), type, executor, gid);
+            auto s = make_slot<slot_t>(std::forward<Callable>(c), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_callable(c);
             });
@@ -1647,9 +1669,9 @@ namespace sigslot {
         template <typename Ptr, typename Pmf>
         std::enable_if_t<trait::is_callable_v<arg_list, Ptr, Pmf> &&
                              trait::is_observer_v<Ptr>, connection>
-        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using slot_t = detail::slot_pmf<Ptr, Pmf, T...>;
-            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, executor, gid);
+            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_object(ptr) && slot->has_callable(pmf);
             });
@@ -1678,9 +1700,9 @@ namespace sigslot {
         std::enable_if_t<trait::is_callable_v<arg_list, Ptr, Pmf> &&
                              !trait::is_observer_v<Ptr> &&
                              !trait::is_weak_ptr_compatible_v<Ptr>, connection>
-        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using slot_t = detail::slot_pmf<Ptr, Pmf, T...>;
-            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, executor, gid);
+            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_object(ptr) && slot->has_callable(pmf);
             });
@@ -1707,9 +1729,9 @@ namespace sigslot {
         template <typename Ptr, typename Pmf>
         std::enable_if_t<trait::is_callable_v<ext_arg_list, Ptr, Pmf> &&
                              !trait::is_weak_ptr_compatible_v<Ptr>, connection>
-        connect_extended(Pmf&& pmf, Ptr&& ptr, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect_extended(Pmf&& pmf, Ptr&& ptr, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using slot_t = detail::slot_pmf_extended<Pmf, Ptr, T...>;
-            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, executor, gid);
+            auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_object(ptr) && slot->has_callable(pmf);
             });
@@ -1743,11 +1765,11 @@ namespace sigslot {
         template <typename Ptr, typename Pmf>
         std::enable_if_t<!trait::is_callable_v<arg_list, Pmf> &&
                              trait::is_weak_ptr_compatible_v<Ptr>, connection>
-        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using trait::to_weak;
             auto w = to_weak(std::forward<Ptr>(ptr));
             using slot_t = detail::slot_pmf_tracked<Pmf, decltype(w), T...>;
-            auto s = make_slot<slot_t>(w, std::forward<Pmf>(pmf), type, executor, gid);
+            auto s = make_slot<slot_t>(w, std::forward<Pmf>(pmf), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_object(ptr) && slot->has_callable(pmf);
             });
@@ -1780,11 +1802,11 @@ namespace sigslot {
         template <typename Trackable, typename Callable>
         std::enable_if_t<trait::is_callable_v<arg_list, Callable> &&
                              trait::is_weak_ptr_compatible_v<Trackable>, connection>
-        connect(Trackable&& ptr, Callable&& c, uint32_t type = connection_type::direct_connection, i_executor* executor = nullptr, group_id gid = 0) {
+        connect(Trackable&& ptr, Callable&& c, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
             using trait::to_weak;
             auto w = to_weak(std::forward<Trackable>(ptr));
             using slot_t = detail::slot_tracked<Callable, decltype(w), T...>;
-            auto s = make_slot<slot_t>(w, std::forward<Callable>(c), type, executor, gid);
+            auto s = make_slot<slot_t>(w, std::forward<Callable>(c), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_callable(c);
             });

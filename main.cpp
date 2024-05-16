@@ -1,8 +1,39 @@
 #include <iostream>
 #include "signal.hpp"
-#include "executor.hpp"
+#include "task_queue.h"
+#include "task_queue_manager.h"
 
 using namespace std;
+
+class MyParam {
+public:
+    ~MyParam() {
+
+    }
+
+    MyParam() {
+
+    }
+
+    MyParam(const MyParam& m) {
+        std::cout << "MyParam copy" << std::endl;
+    }
+
+    MyParam& operator=(const MyParam&) {
+        std::cout << "MyParam assign copy" << std::endl;
+        return *this;
+    }
+
+    MyParam(MyParam&& m) {
+        std::cout << "MyParam move" << std::endl;
+    }
+
+    MyParam& operator=(MyParam&&) {
+        std::cout << "MyParam assign move" << std::endl;
+        return *this;
+    }
+
+};
 
 class MyClass : public sigslot::observer {
 public:
@@ -12,6 +43,10 @@ public:
         this->disconnect_all();
     }
 
+    MyClass() {
+
+    }
+
     void sum(int a, int b) {
         std::cout << "a + b = " << a + b << std::endl;
     }
@@ -19,32 +54,34 @@ public:
 
 class MySharedClass : public std::enable_shared_from_this<MySharedClass> {
 public:
-    ~MySharedClass() {
-    }
+    ~MySharedClass() {}
 
     void sum(int a, int b) {
         std::cout << "a + b = " << a + b << std::endl;
     }
 };
 
+void func(MyParam p){
+    cout << "Hello World!"<< endl;
+}
+
 int main()
 {
-    executor exec;
+    TQMgr->create({"worker"});
 
-    sigslot::signal<int> sig;
+    sigslot::signal<MyParam> sig;
 
-    sig.connect([](int x){
-        cout << "Hello World!" << " " << x << endl;
-    }, sigslot::connection_type::queued_connection, &exec);
+    sig.connect(func, sigslot::queued_connection, TQ("worker"));
 
-    sig(3);
+    MyParam param;
+    sig(param);
 
 
     MyClass myc;
 
     sigslot::signal<int, int> sum;
 
-    sum.connect(&myc, &MyClass::sum, sigslot::connection_type::blocking_queued_connection, &exec);
+    sum.connect(&myc, &MyClass::sum, sigslot::queued_connection, TQ("worker"));
 
     sum(3, 5);
 
@@ -52,7 +89,7 @@ int main()
 
     MySharedClass mysc;
 
-    sum.connect(&mysc, &MySharedClass::sum, sigslot::connection_type::blocking_queued_connection, &exec);
+    sum.connect(&mysc, &MySharedClass::sum, sigslot::blocking_queued_connection, TQ("worker"));
 
     sum(3, 7);
 
@@ -73,7 +110,7 @@ int main()
 
     sum(2, 3);
 
-    //std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 
     return 0;
 }
