@@ -91,8 +91,6 @@ int main()
     double duration_millsecond = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << duration_millsecond << "ms" << std::endl;
 
-
-
     // sigslot::signal<MyParam> sig;
 
     // sig.connect(func, sigslot::queued_connection, TQ("worker"));

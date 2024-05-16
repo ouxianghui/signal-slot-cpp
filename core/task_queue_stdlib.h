@@ -7,6 +7,7 @@
 #include <queue>
 #include <utility>
 #include <thread>
+#include <mutex>
 #include <string_view>
 #include "queued_task.h"
 #include "event.h"

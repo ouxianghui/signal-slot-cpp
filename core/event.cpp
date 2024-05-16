@@ -40,7 +40,7 @@ namespace core {
         event_handle_ = ::CreateEvent(nullptr,  // Security attributes.
                                       manual_reset, initially_signaled,
                                       nullptr);  // Name.
-        RTC_CHECK(event_handle_);
+        assert(event_handle_);
     }
 
     Event::~Event() {
@@ -60,7 +60,7 @@ namespace core {
         const DWORD ms =
             give_up_after.IsPlusInfinity()
                 ? INFINITE
-                : give_up_after.RoundUpTo(webrtc::TimeDelta::Millis(1)).ms();
+                : give_up_after.RoundUpTo(core::TimeDelta::Millis(1)).ms();
         return (WaitForSingleObject(event_handle_, ms) == WAIT_OBJECT_0);
     }
 

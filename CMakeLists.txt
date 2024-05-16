@@ -5,14 +5,19 @@ project(SigSlot LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_definitions("-DWEBRTC_POSIX -DENABLE_STDCXX_SYNC=ON")
-
+if (WIN32)
+    add_definitions("-DWEBRTC_WIN -DABSL_HAVE_THREAD_LOCAL")
+elseif (APPLE)
+    add_definitions("-DWEBRTC_POSIX")
+endif (APPLE)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include)
 
 file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h**)
 
-add_executable(SigSlot main.cpp ${SRC_FILES}
+add_executable(SigSlot
+    ${SRC_FILES}
+    main.cpp
     core/event.cpp
     core/task_queue_base.cpp
     core/task_queue_manager.cpp
@@ -24,7 +29,9 @@ add_executable(SigSlot main.cpp ${SRC_FILES}
     core/yield.cpp
     core/yield_policy.cpp)
 
-# target_link_libraries(SigSlot -lpthread)
+if (WIN32)
+    target_link_libraries(SigSlot winmm.lib)
+endif (WIN32)
 
 include(GNUInstallDirs)
 install(TARGETS SigSlot
