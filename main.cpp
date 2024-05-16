@@ -1,7 +1,7 @@
 #include <iostream>
 #include "signal.hpp"
-#include "task_queue.h"
-#include "task_queue_manager.h"
+#include "core/task_queue.h"
+#include "core/task_queue_manager.h"
 
 using namespace std;
 
@@ -50,6 +50,10 @@ public:
     void sum(int a, int b) {
         std::cout << "a + b = " << a + b << std::endl;
     }
+
+    void test() {
+
+    }
 };
 
 class MySharedClass : public std::enable_shared_from_this<MySharedClass> {
@@ -69,47 +73,67 @@ int main()
 {
     TQMgr->create({"worker"});
 
-    sigslot::signal<MyParam> sig;
-
-    sig.connect(func, sigslot::queued_connection, TQ("worker"));
-
-    MyParam param;
-    sig(param);
+    sigslot::signal<> sig;
 
     MyClass myc;
+    sig.connect(&myc, &MyClass::test, sigslot::queued_connection, TQ("worker"));
 
-    sigslot::signal<int, int> sum;
+    auto start = std::chrono::steady_clock::now();
 
-    sum.connect(&myc, &MyClass::sum, sigslot::queued_connection, TQ("worker"));
+    const int32_t times = 1000000;
 
-    sum(3, 5);
-
-    sum.disconnect_all();
-
-    MySharedClass mysc;
-
-    sum.connect(&mysc, &MySharedClass::sum, sigslot::blocking_queued_connection, TQ("worker"));
-
-    sum(3, 7);
-
-    sum.disconnect_all();
-
-    sum.connect_extended([](sigslot::connection& conn, int a, int b){
-        conn.disconnect();
-        std::cout << "connect_extended, a + b = " << a + b << std::endl;
-    });
-
-    sum(1, 2);
-
-    {
-        auto soped_connection = sum.connect_scoped([](int a, int b){
-            std::cout << "connect_scoped, a + b = " << a + b << std::endl;
-        });
+    for (int i = 0; i < times; ++i) {
+         sig();
     }
 
-    sum(2, 3);
+    auto end = std::chrono::steady_clock::now();
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    double duration_millsecond = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << duration_millsecond << "ms" << std::endl;
+
+
+
+    // sigslot::signal<MyParam> sig;
+
+    // sig.connect(func, sigslot::queued_connection, TQ("worker"));
+
+    // MyParam param;
+    // sig(param);
+
+    // MyClass myc;
+
+    // sigslot::signal<int, int> sum;
+
+    // sum.connect(&myc, &MyClass::sum, sigslot::queued_connection, TQ("worker"));
+
+    // sum(3, 5);
+
+    // sum.disconnect_all();
+
+    // MySharedClass mysc;
+
+    // sum.connect(&mysc, &MySharedClass::sum, sigslot::blocking_queued_connection, TQ("worker"));
+
+    // sum(3, 7);
+
+    // sum.disconnect_all();
+
+    // sum.connect_extended([](sigslot::connection& conn, int a, int b){
+    //     conn.disconnect();
+    //     std::cout << "connect_extended, a + b = " << a + b << std::endl;
+    // });
+
+    // sum(1, 2);
+
+    // {
+    //     auto soped_connection = sum.connect_scoped([](int a, int b){
+    //         std::cout << "connect_scoped, a + b = " << a + b << std::endl;
+    //     });
+    // }
+
+    // sum(2, 3);
+
+    std::this_thread::sleep_for(std::chrono::seconds(300));
 
     return 0;
 }

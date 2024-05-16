@@ -12,11 +12,11 @@ namespace core {
     public:
         virtual ~QueuedTask() = default;
 
-               // Main routine that will run when the task is executed on the desired queue.
-               // The task should return |true| to indicate that it should be deleted or
-               // |false| to indicate that the queue should consider ownership of the task
-               // having been transferred.  Returning |false| can be useful if a task has
-               // re-posted itself to a different queue or is otherwise being re-used.
+        // Main routine that will run when the task is executed on the desired queue.
+        // The task should return |true| to indicate that it should be deleted or
+        // |false| to indicate that the queue should consider ownership of the task
+        // having been transferred.  Returning |false| can be useful if a task has
+        // re-posted itself to a different queue or is otherwise being re-used.
         virtual bool run() = 0;
     };
 

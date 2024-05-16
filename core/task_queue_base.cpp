@@ -9,7 +9,7 @@ namespace core {
 
     }  // namespace
 
-    TaskQueueBase* TaskQueueBase::current() {
+    TaskQueueBase* TaskQueueBase::Current() {
         return _current;
     }
 

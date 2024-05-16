@@ -28,7 +28,7 @@ namespace core {
         std::unique_lock<std::mutex> lock(m_mutex);
         for (const auto& name : nameList) {
             if (!exist(name)) {
-                m_queueMap[name] = TaskQueue::create(name);
+                m_queueMap[name] = TaskQueue::Create(name);
             }
         }
     }

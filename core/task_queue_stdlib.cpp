@@ -1,77 +1,75 @@
-#include "task_queue_std.h"
+#include "task_queue_stdlib.h"
 #include <assert.h>
+#include "time_utils.h"
+#include "divide_round.h"
 
 namespace core {
 
-    TaskQueueSTD::TaskQueueSTD(std::string_view queueName)
-    : started_(/*manual_reset=*/false, /*initially_signaled=*/false)
-    , stopped_(/*manual_reset=*/false, /*initially_signaled=*/false)
-    , flag_notify_(/*manual_reset=*/false, /*initially_signaled=*/false)
-    , name_(queueName) {
-
+    TaskQueueStdlib::TaskQueueStdlib(std::string_view queue_name)
+    : flag_notify_(/*manual_reset=*/false, /*initially_signaled=*/false)
+    , name_(queue_name) {
+        //Event started;
         thread_ = std::thread([this]{
             CurrentTaskQueueSetter setCurrent(this);
-            this->processTasks();
+            this->started_.Set();
+            this->ProcessTasks();
         });
 
-
-        started_.wait(Event::kForever);
+        started_.Wait(Event::kForever);
     }
 
-    void TaskQueueSTD::deleteThis() {
-        //RTC_DCHECK(!isCurrent());
-        assert(isCurrent() == false);
+    void TaskQueueStdlib::Delete() {
+        assert(!IsCurrent());
 
         {
-            std::unique_lock<std::mutex> lock(pending_mutex_);
+            std::unique_lock<std::mutex> lock(pending_lock_);
             thread_should_quit_ = true;
         }
 
-        notifyWake();
+        NotifyWake();
 
-        stopped_.wait(Event::kForever);
-
-        if (thread_.joinable()) {
-            thread_.join();
-        }
         delete this;
     }
 
-    void TaskQueueSTD::postTask(std::unique_ptr<QueuedTask> task) {
+    void TaskQueueStdlib::PostTask(std::unique_ptr<QueuedTask> task) {
         {
-            std::unique_lock<std::mutex> lock(pending_mutex_);
-            OrderId order = thread_posting_order_++;
-
-            pending_queue_.push(std::pair<OrderId, std::unique_ptr<QueuedTask>>(order, std::move(task)));
+            std::unique_lock<std::mutex> lock(pending_lock_);
+            pending_queue_.push(std::make_pair(++thread_posting_order_, std::move(task)));
         }
 
-        notifyWake();
+        NotifyWake();
     }
 
-    void TaskQueueSTD::postDelayedTask(std::unique_ptr<QueuedTask> task, uint32_t ms) {
-        auto fire_at = milliseconds() + ms;
-
-        DelayedEntryTimeout delay;
-        delay.next_fire_at_ms_ = fire_at;
+    void TaskQueueStdlib::PostDelayedTask(std::unique_ptr<QueuedTask> task, TimeDelta delay) {
+        DelayedEntryTimeout delayed_entry;
+        delayed_entry.next_fire_at_us = TimeMicros() + delay.us();
 
         {
-            std::unique_lock<std::mutex> lock(pending_mutex_);
-            delay.order_ = ++thread_posting_order_;
-            delayed_queue_[delay] = std::move(task);
+            std::unique_lock<std::mutex> lock(pending_lock_);
+            delayed_entry.order = ++thread_posting_order_;
+            delayed_queue_[delayed_entry] = std::move(task);
         }
 
-        notifyWake();
+        NotifyWake();
     }
 
-    TaskQueueSTD::NextTask TaskQueueSTD::getNextTask() {
-        NextTask result{};
+    void TaskQueueStdlib::PostDelayedHighPrecisionTask(std::unique_ptr<QueuedTask> task, TimeDelta delay) {
+        PostDelayedTask(std::move(task), delay);
+    }
 
-        auto tick = milliseconds();
+    const std::string& TaskQueueStdlib::Name() const {
+        return name_;
+    }
 
-        std::unique_lock<std::mutex> lock(pending_mutex_);
+    TaskQueueStdlib::NextTask TaskQueueStdlib::GetNextTask() {
+        NextTask result;
+
+        const int64_t tick_us = TimeMicros();
+
+        std::unique_lock<std::mutex> lock(pending_lock_);
 
         if (thread_should_quit_) {
-            result.final_task_ = true;
+            result.final_task = true;
             return result;
         }
 
@@ -79,67 +77,57 @@ namespace core {
             auto delayed_entry = delayed_queue_.begin();
             const auto& delay_info = delayed_entry->first;
             auto& delay_run = delayed_entry->second;
-            if (tick >= delay_info.next_fire_at_ms_) {
+            if (tick_us >= delay_info.next_fire_at_us) {
                 if (pending_queue_.size() > 0) {
                     auto& entry = pending_queue_.front();
                     auto& entry_order = entry.first;
                     auto& entry_run = entry.second;
-                    if (entry_order < delay_info.order_) {
-                        result.run_task_ = std::move(entry_run);
+                    if (entry_order < delay_info.order) {
+                        result.run_task = std::move(entry_run);
                         pending_queue_.pop();
                         return result;
                     }
                 }
 
-                result.run_task_ = std::move(delay_run);
+                result.run_task = std::move(delay_run);
                 delayed_queue_.erase(delayed_entry);
                 return result;
             }
 
-            result.sleep_time_ms_ = delay_info.next_fire_at_ms_ - tick;
+            result.sleep_time = TimeDelta::Millis(DivideRoundUp(delay_info.next_fire_at_us - tick_us, 1'000));
         }
 
         if (pending_queue_.size() > 0) {
             auto& entry = pending_queue_.front();
-            result.run_task_ = std::move(entry.second);
+            result.run_task = std::move(entry.second);
             pending_queue_.pop();
         }
 
         return result;
     }
 
-    void TaskQueueSTD::processTasks() {
-        started_.set();
-
+    void TaskQueueStdlib::ProcessTasks() {
         while (true) {
-            auto task = getNextTask();
+            auto task = GetNextTask();
 
-            if (task.final_task_) {
+            if (task.final_task)
                 break;
-            }
 
-            if (task.run_task_) {
+            if (task.run_task) {
                 // process entry immediately then try again
-                QueuedTask* release_ptr = task.run_task_.release();
+                QueuedTask* release_ptr = task.run_task.release();
                 if (release_ptr->run()) {
                     delete release_ptr;
                 }
-                // attempt to sleep again
+                // Attempt to run more tasks before going to sleep.
                 continue;
             }
 
-            if (0 == task.sleep_time_ms_) {
-                flag_notify_.wait(Event::kForever);
-            }
-            else {
-                flag_notify_.wait(task.sleep_time_ms_);
-            }
+            flag_notify_.Wait(task.sleep_time);
         }
-
-        stopped_.set();
     }
 
-    void TaskQueueSTD::notifyWake() {
+    void TaskQueueStdlib::NotifyWake() {
         // The queue holds pending tasks to complete. Either tasks are to be
         // executed immediately or tasks are to be run at some future delayed time.
         // For immediate tasks the task queue's thread is busy running the task and
@@ -164,15 +152,6 @@ namespace core {
                // thread is notified to wake up but the task queue's thread finds nothing to
                // do so it waits once again to be signaled where such a signal may never
                // happen.
-        flag_notify_.set();
+        flag_notify_.Set();
     }
-
-    int64_t TaskQueueSTD::milliseconds() {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    }
-
-    const std::string& TaskQueueSTD::name() const {
-        return name_;
-    }
-
 }

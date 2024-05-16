@@ -910,7 +910,7 @@ namespace sigslot {
             inline bool is_current() {
                 assert(this->m_queue);
                 auto is_current = false;
-                if (this->m_queue->isCurrent()) {
+                if (this->m_queue->IsCurrent()) {
                     is_current = true;
                 }
                 return is_current;
@@ -989,7 +989,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1009,7 +1009,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1073,7 +1073,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1093,7 +1093,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1158,7 +1158,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1178,7 +1178,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             ((*(this->ptr)).*(this->pmf))(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1248,7 +1248,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1268,7 +1268,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             ((*(this->ptr)).*(this->pmf))(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1347,7 +1347,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1367,7 +1367,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             this->func(args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1446,7 +1446,7 @@ namespace sigslot {
                 } else if (type == connection_type::queued_connection) {
                     assert(this->m_queue);
                     if (this->m_queue) {
-                        this->m_queue->postTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), sp, args...]() mutable {
+                        this->m_queue->PostTask([wself = std::weak_ptr<this_type>(this_type::shared_from_this()), sp, args...]() mutable {
                             auto self = wself.lock();
                             if (!self) {
                                 return;
@@ -1466,7 +1466,7 @@ namespace sigslot {
                 } else if (type == connection_type::blocking_queued_connection) {
                     auto promise = std::promise<void>();
                     assert(this->m_queue);
-                    this->m_queue->postTask([this, sp, &args..., &promise]() mutable {
+                    this->m_queue->PostTask([this, sp, &args..., &promise]() mutable {
                         if (this->slot_state::connected()) {
                             (*sp.*(this->pmf))(this->conn, args...);
                             if (this->m_singleshot && this->m_emitted) {
@@ -1477,6 +1477,7 @@ namespace sigslot {
                         }
                         promise.set_value();
                     });
+                    promise.get_future().get();
                 } else {
                     std::cerr << "illegal connection type" << std::endl;
                 }

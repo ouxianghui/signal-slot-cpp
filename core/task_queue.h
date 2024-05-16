@@ -5,7 +5,7 @@
 #include <memory>
 #include <string_view>
 #include "queued_task.h"
-
+#include "time_delta.h"
 
 namespace core {
     // Implements a task queue that asynchronously executes tasks in a way that
@@ -64,38 +64,38 @@ namespace core {
         explicit TaskQueue(std::unique_ptr<TaskQueueBase, TaskQueueDeleter> taskQueue);
         ~TaskQueue();
 
-        static std::unique_ptr<TaskQueue> create(std::string_view name);
+        static std::unique_ptr<TaskQueue> Create(std::string_view name);
 
-               // Used for DCHECKing the current queue.
-        bool isCurrent() const;
+        // Used for DCHECKing the current queue.
+        bool IsCurrent() const;
 
-               // Returns non-owning pointer to the task queue implementation.
-        TaskQueueBase* get() { return impl_; }
+        // Returns non-owning pointer to the task queue implementation.
+        TaskQueueBase* Get() { return impl_; }
 
-               // TODO(tommi): For better debuggability, implement RTC_FROM_HERE.
+        // TODO(tommi): For better debuggability, implement RTC_FROM_HERE.
 
-               // Ownership of the task is passed to PostTask.
-        void postTask(std::unique_ptr<QueuedTask> task);
+       // Ownership of the task is passed to PostTask.
+        void PostTask(std::unique_ptr<QueuedTask> task);
 
-               // Schedules a task to execute a specified number of milliseconds from when
-               // the call is made. The precision should be considered as "best effort"
-               // and in some cases, such as on Windows when all high precision timers have
-               // been used up, can be off by as much as 15 millseconds (although 8 would be
-               // more likely). This can be mitigated by limiting the use of delayed tasks.
-        void postDelayedTask(std::unique_ptr<QueuedTask> task, uint32_t milliseconds);
+        // Schedules a task to execute a specified number of milliseconds from when
+        // the call is made. The precision should be considered as "best effort"
+        // and in some cases, such as on Windows when all high precision timers have
+        // been used up, can be off by as much as 15 millseconds (although 8 would be
+        // more likely). This can be mitigated by limiting the use of delayed tasks.
+        void PostDelayedTask(std::unique_ptr<QueuedTask> task, TimeDelta delay);
 
 
-               // std::enable_if is used here to make sure that calls to PostTask() with
-               // std::unique_ptr<SomeClassDerivedFromQueuedTask> would not end up being
-               // caught by this template.
+        // std::enable_if is used here to make sure that calls to PostTask() with
+        // std::unique_ptr<SomeClassDerivedFromQueuedTask> would not end up being
+        // caught by this template.
         template <class Closure, typename std::enable_if<!std::is_convertible<Closure, std::unique_ptr<QueuedTask>>::value>::type* = nullptr>
-        void postTask(Closure&& closure) {
-            postTask(ToQueuedTask(std::forward<Closure>(closure)));
+        void PostTask(Closure&& closure) {
+            PostTask(ToQueuedTask(std::forward<Closure>(closure)));
         }
 
-               // See documentation above for performance expectations.
+        // See documentation above for performance expectations.
         template <class Closure, typename std::enable_if<!std::is_convertible<Closure, std::unique_ptr<QueuedTask>>::value>::type* = nullptr>
-        void postDelayedTask(Closure&& closure, uint32_t milliseconds) {
+        void PostDelayedTask(Closure&& closure, uint32_t milliseconds) {
             postDelayedTask(ToQueuedTask(std::forward<Closure>(closure)),  milliseconds);
         }
 
