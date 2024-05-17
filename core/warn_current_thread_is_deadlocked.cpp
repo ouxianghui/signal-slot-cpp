@@ -15,11 +15,11 @@
 
 namespace core {
 
-#if defined(WEBRTC_ANDROID) && !defined(WEBRTC_CHROMIUM_BUILD)
+#if defined(CORE_ANDROID) && !defined(CORE_CHROMIUM_BUILD)
     void WarnThatTheCurrentThreadIsProbablyDeadlocked() {
         //RTC_LOG(LS_WARNING) << "Probable deadlock:";
         //RTC_LOG(LS_WARNING) << StackTraceToString(GetStackTrace());
     }
 #endif
 
-}  // namespace webrtc
+}  // namespace core

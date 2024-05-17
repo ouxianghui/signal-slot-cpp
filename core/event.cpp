@@ -10,15 +10,15 @@
 
 #include "event.h"
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 #include <windows.h>
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
 #include <errno.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
 #else
-#error "Must define either WEBRTC_WIN or WEBRTC_POSIX."
+#error "Must define either CORE_WIN or CORE_POSIX."
 #endif
 
 #include <assert.h>
@@ -34,7 +34,7 @@ namespace core {
 
     Event::Event() : Event(false, false) {}
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 
     Event::Event(bool manual_reset, bool initially_signaled) {
         event_handle_ = ::CreateEvent(nullptr,  // Security attributes.
@@ -64,18 +64,18 @@ namespace core {
         return (WaitForSingleObject(event_handle_, ms) == WAIT_OBJECT_0);
     }
 
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
 
 // On MacOS, clock_gettime is available from version 10.12, and on
 // iOS, from version 10.0. So we can't use it yet.
-#if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
+#if defined(CORE_MAC) || defined(CORE_IOS)
 #define USE_CLOCK_GETTIME 0
 #define USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP 0
 // On Android, pthread_condattr_setclock is available from version 21. By
 // default, we target a new enough version for 64-bit platforms but not for
 // 32-bit platforms. For older versions, use
 // pthread_cond_timedwait_monotonic_np.
-#elif defined(WEBRTC_ANDROID) && (__ANDROID_API__ < 21)
+#elif defined(CORE_ANDROID) && (__ANDROID_API__ < 21)
 #define USE_CLOCK_GETTIME 1
 #define USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP 1
 #else
@@ -118,7 +118,7 @@ namespace core {
         timespec GetTimespec(TimeDelta duration_from_now) {
             timespec ts;
 
-       // Get the current time.
+// Get the current time.
 #if USE_CLOCK_GETTIME
             clock_gettime(CLOCK_MONOTONIC, &ts);
 #else
@@ -128,7 +128,7 @@ namespace core {
             ts.tv_nsec = tv.tv_usec * kNumNanosecsPerMicrosec;
 #endif
 
-                   // Add the specified number of milliseconds to it.
+            // Add the specified number of milliseconds to it.
             int64_t microsecs_from_now = duration_from_now.us();
             ts.tv_sec += microsecs_from_now / kNumMicrosecsPerSec;
             ts.tv_nsec +=
@@ -154,18 +154,18 @@ namespace core {
                 ? std::nullopt
                 : std::make_optional(GetTimespec(warn_after));
 
-               // Instant when we'll stop waiting and return an error. nullopt if we should
-               // never give up.
+        // Instant when we'll stop waiting and return an error. nullopt if we should
+        // never give up.
         const std::optional<timespec> give_up_ts =
             give_up_after.IsPlusInfinity()
                 ? std::nullopt
                 : std::make_optional(GetTimespec(give_up_after));
 
-               //ScopedYieldPolicy::YieldExecution();
+        ScopedYieldPolicy::YieldExecution();
         pthread_mutex_lock(&event_mutex_);
 
-               // Wait for `event_cond_` to trigger and `event_status_` to be set, with the
-               // given timeout (or without a timeout if none is given).
+        // Wait for `event_cond_` to trigger and `event_status_` to be set, with the
+        // given timeout (or without a timeout if none is given).
         const auto wait = [&](const std::optional<timespec> timeout_ts) {
             int error = 0;
             while (!event_status_ && error == 0) {
@@ -194,9 +194,9 @@ namespace core {
             }
         }
 
-               // NOTE(liulk): Exactly one thread will auto-reset this event. All
-               // the other threads will think it's unsignaled.  This seems to be
-               // consistent with auto-reset events in WEBRTC_WIN
+        // NOTE(liulk): Exactly one thread will auto-reset this event. All
+        // the other threads will think it's unsignaled.  This seems to be
+        // consistent with auto-reset events in CORE_WIN
         if (error == 0 && !is_manual_reset_)
             event_status_ = false;
 
@@ -207,4 +207,4 @@ namespace core {
 
 #endif
 
-}  // namespace rtc
+}  // namespace core

@@ -87,3 +87,4 @@ int main()
 
 ### Dependence
 sigslot: https://github.com/palacaze/sigslot
+core: The source code for the task queue comes from webrtc and rename the namespace

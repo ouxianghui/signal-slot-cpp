@@ -13,11 +13,11 @@
 // #include "absl/base/attributes.h"
 // #include "absl/base/config.h"
 // #include "rtc_base/checks.h"
-#if !defined(ABSL_HAVE_THREAD_LOCAL) && defined(WEBRTC_POSIX)
+#if !defined(CORE_HAVE_THREAD_LOCAL) && defined(CORE_POSIX)
 #include <pthread.h>
 #endif
 
-// ABSL_HAVE_CPP_ATTRIBUTE
+// CORE_HAVE_CPP_ATTRIBUTE
 //
 // A function-like feature checking macro that accepts C++11 style attributes.
 // It's a wrapper around `__has_cpp_attribute`, defined by ISO C++ SD-6
@@ -26,26 +26,26 @@
 #if defined(__cplusplus) && defined(__has_cpp_attribute)
 // NOTE: requiring __cplusplus above should not be necessary, but
 // works around https://bugs.llvm.org/show_bug.cgi?id=23435.
-#define ABSL_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#define CORE_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
 #else
-#define ABSL_HAVE_CPP_ATTRIBUTE(x) 0
+#define CORE_HAVE_CPP_ATTRIBUTE(x) 0
 #endif
 
 
 #if defined(__cpp_constinit) && __cpp_constinit >= 201907L
-#define ABSL_CONST_INIT constinit
-#elif ABSL_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
-#define ABSL_CONST_INIT [[clang::require_constant_initialization]]
+#define CORE_CONST_INIT constinit
+#elif CORE_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
+#define CORE_CONST_INIT [[clang::require_constant_initialization]]
 #else
-#define ABSL_CONST_INIT
+#define CORE_CONST_INIT
 #endif
 
 namespace core {
     namespace {
 
-#if defined(ABSL_HAVE_THREAD_LOCAL)
+#if defined(CORE_HAVE_THREAD_LOCAL)
 
-        ABSL_CONST_INIT thread_local YieldInterface* current_yield_policy = nullptr;
+        CORE_CONST_INIT thread_local YieldInterface* current_yield_policy = nullptr;
 
         YieldInterface* GetCurrentYieldPolicy() {
             return current_yield_policy;
@@ -55,13 +55,13 @@ namespace core {
             current_yield_policy = ptr;
         }
 
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
 
         // Emscripten does not support the C++11 thread_local keyword but does support
         // the pthread thread-local storage API.
         // https://github.com/emscripten-core/emscripten/issues/3502
 
-        ABSL_CONST_INIT pthread_key_t g_current_yield_policy_tls = 0;
+        CORE_CONST_INIT pthread_key_t g_current_yield_policy_tls = 0;
 
         void InitializeTls() {
             assert(pthread_key_create(&g_current_yield_policy_tls, nullptr) == 0);
@@ -98,8 +98,9 @@ namespace core {
 
     void ScopedYieldPolicy::YieldExecution() {
         YieldInterface* current = GetCurrentYieldPolicy();
-        if (current)
+        if (current) {
             current->YieldExecution();
+        }
     }
 
-}  // namespace rtc
+}  // namespace core

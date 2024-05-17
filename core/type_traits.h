@@ -135,6 +135,6 @@ namespace core {
 
     }  // namespace test_enum_intlike
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_TYPE_TRAITS_H_

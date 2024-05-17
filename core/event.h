@@ -13,12 +13,12 @@
 
 #include "time_delta.h"
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 #include <windows.h>
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
 #include <pthread.h>
 #else
-#error "Must define either WEBRTC_WIN or WEBRTC_POSIX."
+#error "Must define either CORE_WIN or CORE_POSIX."
 #endif
 
 // #include "rtc_base/synchronization/yield_policy.h"
@@ -88,9 +88,9 @@ namespace core {
         }
 
     private:
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
         HANDLE event_handle_;
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
         pthread_mutex_t event_mutex_;
         pthread_cond_t event_cond_;
         const bool is_manual_reset_;
@@ -132,6 +132,6 @@ namespace core {
     };
 #endif
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_EVENT_H_

@@ -10,7 +10,7 @@
 
 #include "yield.h"
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 #include <windows.h>
 #else
 #include <sched.h>
@@ -22,9 +22,9 @@ namespace core {
     void YieldCurrentThread() {
         // TODO(bugs.webrtc.org/11634): use dedicated OS functionality instead of
         // sleep for yielding.
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
         ::Sleep(0);
-#elif defined(WEBRTC_MAC) && defined(RTC_USE_NATIVE_MUTEX_ON_MAC) && \
+#elif defined(CORE_MAC) && defined(RTC_USE_NATIVE_MUTEX_ON_MAC) && \
         !RTC_USE_NATIVE_MUTEX_ON_MAC
         sched_yield();
 #else
@@ -33,4 +33,4 @@ namespace core {
 #endif
     }
 
-}  // namespace webrtc
+}  // namespace core

@@ -8,22 +8,22 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-// If WEBRTC_EXCLUDE_SYSTEM_TIME is set, an implementation of
+// If CORE_EXCLUDE_SYSTEM_TIME is set, an implementation of
 // rtc::SystemTimeNanos() must be provided externally.
-#ifndef WEBRTC_EXCLUDE_SYSTEM_TIME
+#ifndef CORE_EXCLUDE_SYSTEM_TIME
 
 #include <stdint.h>
 
 #include <limits>
 
-#if defined(WEBRTC_POSIX)
+#if defined(CORE_POSIX)
 #include <sys/time.h>
-#if defined(WEBRTC_MAC)
+#if defined(CORE_MAC)
 #include <mach/mach_time.h>
 #endif
 #endif
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 // clang-format off
 // clang formatting would put <windows.h> last,
 // which leads to compilation failure.
@@ -42,7 +42,7 @@ namespace core {
 
     int64_t SystemTimeNanos() {
         int64_t ticks;
-#if defined(WEBRTC_MAC)
+#if defined(CORE_MAC)
         static mach_timebase_info_data_t timebase;
         if (timebase.denom == 0) {
             // Get the timebase if this is the first time we run.
@@ -59,7 +59,7 @@ namespace core {
             return rtc::dchecked_cast<int64_t>(a * b);
         };
         ticks = mul(mach_absolute_time(), timebase.numer) / timebase.denom;
-#elif defined(WEBRTC_POSIX)
+#elif defined(CORE_POSIX)
         struct timespec ts;
         // TODO(deadbeef): Do we need to handle the case when CLOCK_MONOTONIC is not
         // supported?
@@ -68,7 +68,7 @@ namespace core {
                 static_cast<int64_t>(ts.tv_nsec);
 #elif defined(WINUWP)
         ticks = WinUwpSystemTimeNanos();
-#elif defined(WEBRTC_WIN)
+#elif defined(CORE_WIN)
         // TODO(webrtc:14601): Fix the volatile increment instead of suppressing the
         // warning.
 #pragma clang diagnostic push
@@ -98,5 +98,5 @@ namespace core {
         return ticks;
     }
 
-}  // namespace rtc
-#endif  // WEBRTC_EXCLUDE_SYSTEM_TIME
+}  // namespace core
+#endif  // CORE_EXCLUDE_SYSTEM_TIME

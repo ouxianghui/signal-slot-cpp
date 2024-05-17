@@ -172,6 +172,6 @@ namespace core {
         }
 
     }  // namespace internal
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_NUMERICS_SAFE_CONVERSIONS_IMPL_H_

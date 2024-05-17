@@ -15,6 +15,6 @@ namespace core {
     // Request rescheduling of threads.
     void YieldCurrentThread();
 
-}  // namespace webrtc
+}  // namespace core
 
 #endif  // RTC_BASE_SYNCHRONIZATION_YIELD_H_

@@ -171,6 +171,6 @@ namespace core {
     RTC_SAFECMP_MAKE_FUN(Ge)
 #undef RTC_SAFECMP_MAKE_FUN
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_NUMERICS_SAFE_COMPARE_H_

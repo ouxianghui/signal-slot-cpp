@@ -332,8 +332,8 @@ namespace core {
             return -1 * other;
         }
 
-    }  // namespace rtc_units_impl
+    }  // namespace core_units_impl
 
-}  // namespace webrtc
+}  // namespace core
 
 #endif  // RTC_BASE_UNITS_UNIT_BASE_H_

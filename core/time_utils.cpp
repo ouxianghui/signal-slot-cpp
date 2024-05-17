@@ -11,11 +11,11 @@
 #include <stdint.h>
 #include <assert.h>
 
-#if defined(WEBRTC_POSIX)
+#if defined(CORE_POSIX)
 #include <sys/time.h>
 #endif
 
-#if defined(WEBRTC_WIN)
+#if defined(CORE_WIN)
 #include <sys/timeb.h>
 #endif
 
@@ -249,14 +249,14 @@ namespace core {
         if (g_clock) {
             return g_clock->TimeNanos() / kNumNanosecsPerMicrosec;
         }
-#if defined(WEBRTC_POSIX)
+#if defined(CORE_POSIX)
         struct timeval time;
         gettimeofday(&time, nullptr);
         // Convert from second (1.0) and microsecond (1e-6).
         return (static_cast<int64_t>(time.tv_sec) * core::kNumMicrosecsPerSec +
                 time.tv_usec);
 
-#elif defined(WEBRTC_WIN)
+#elif defined(CORE_WIN)
         struct _timeb time;
         _ftime(&time);
         // Convert from second (1.0) and milliseconds (1e-3).
@@ -269,4 +269,4 @@ namespace core {
         return TimeUTCMicros() / kNumMicrosecsPerMillisec;
     }
 
-}  // namespace rtc
+}  // namespace core

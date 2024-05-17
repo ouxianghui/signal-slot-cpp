@@ -13,12 +13,12 @@
 
 namespace core {
 
-#if defined(WEBRTC_ANDROID) && !defined(WEBRTC_CHROMIUM_BUILD)
+#if defined(CORE_ANDROID) && !defined(CORE_CHROMIUM_BUILD)
     void WarnThatTheCurrentThreadIsProbablyDeadlocked();
 #else
     inline void WarnThatTheCurrentThreadIsProbablyDeadlocked() {}
 #endif
 
-}  // namespace webrtc
+}  // namespace core
 
 #endif  // RTC_BASE_SYSTEM_WARN_CURRENT_THREAD_IS_DEADLOCKED_H_

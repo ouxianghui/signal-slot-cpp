@@ -72,6 +72,6 @@ namespace core {
         //RTC_CHECK_NOTREACHED();
     }
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_NUMERICS_SAFE_CONVERSIONS_H_

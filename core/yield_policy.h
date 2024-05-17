@@ -33,6 +33,6 @@ namespace core {
         YieldInterface* const previous_;
     };
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_SYNCHRONIZATION_YIELD_POLICY_H_

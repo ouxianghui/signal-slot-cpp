@@ -19,6 +19,6 @@ namespace core {
     // Useful for timeouts while using a test clock, or for logging.
     int64_t SystemTimeNanos();
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_SYSTEM_TIME_H_

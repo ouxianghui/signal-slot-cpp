@@ -146,6 +146,6 @@ namespace core {
     // See above.
     int64_t TimeUTCMillis();
 
-}  // namespace rtc
+}  // namespace core
 
 #endif  // RTC_BASE_TIME_UTILS_H_

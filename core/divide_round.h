@@ -46,6 +46,6 @@ namespace core {
         return quotient + (core::SafeGt(remainder, half_of_divisor) ? 1 : 0);
     }
 
-}  // namespace webrtc
+}  // namespace core
 
 #endif  // RTC_BASE_NUMERICS_DIVIDE_ROUND_H_

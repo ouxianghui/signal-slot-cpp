@@ -70,4 +70,4 @@ namespace core {
         void operator()(TaskQueueBase* taskQueue) const { taskQueue->Delete(); }
     };
 
-}  // namespace webrtc
+}  // namespace core
