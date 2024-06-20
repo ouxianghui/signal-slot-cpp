@@ -1584,7 +1584,7 @@ namespace sigslot {
          *          * @param a... arguments to emit
          */
         template <typename... U>
-        void operator()(U&& ...a) {
+        void operator()(U&& ...a) const {
             if (m_block) {
                 return;
             }
@@ -1984,7 +1984,7 @@ namespace sigslot {
 
     private:
         // used to get a reference to the slots for reading
-        inline cow_copy_type<list_type, Lockable> slots_reference() {
+        inline cow_copy_type<list_type, Lockable> slots_reference() const {
             lock_type lock(m_mutex);
             return m_slots;
         }
@@ -2088,7 +2088,7 @@ namespace sigslot {
         }
 
     private:
-        Lockable m_mutex;
+        mutable Lockable m_mutex;
         cow_type<list_type, Lockable> m_slots;
         std::atomic<bool> m_block;
     };

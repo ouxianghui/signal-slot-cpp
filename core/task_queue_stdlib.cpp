@@ -8,7 +8,6 @@ namespace core {
     TaskQueueStdlib::TaskQueueStdlib(std::string_view queue_name)
     : flag_notify_(/*manual_reset=*/false, /*initially_signaled=*/false)
     , name_(queue_name) {
-        //Event started;
         thread_ = std::thread([this]{
             CurrentTaskQueueSetter setCurrent(this);
             this->started_.Set();
@@ -138,20 +137,20 @@ namespace core {
         // wait on flag_notify_ until signaled that a task has been added (or the
         // thread to be told to shutdown).
 
-               // In all cases, when a new immediate task, delayed task, or request to
-               // shutdown the thread is added the flag_notify_ is signaled after. If the
-               // thread was waiting then the thread will wake up immediately and re-assess
-               // what task needs to be run next (i.e. run a task now, wait for the nearest
-               // timed delayed task, or shutdown the thread). If the thread was not waiting
-               // then the thread will remained signaled to wake up the next time any
-               // attempt to wait on the flag_notify_ event occurs.
+        // In all cases, when a new immediate task, delayed task, or request to
+        // shutdown the thread is added the flag_notify_ is signaled after. If the
+        // thread was waiting then the thread will wake up immediately and re-assess
+        // what task needs to be run next (i.e. run a task now, wait for the nearest
+        // timed delayed task, or shutdown the thread). If the thread was not waiting
+        // then the thread will remained signaled to wake up the next time any
+        // attempt to wait on the flag_notify_ event occurs.
 
-               // Any immediate or delayed pending task (or request to shutdown the thread)
-               // must always be added to the queue prior to signaling flag_notify_ to wake
-               // up the possibly sleeping thread. This prevents a race condition where the
-               // thread is notified to wake up but the task queue's thread finds nothing to
-               // do so it waits once again to be signaled where such a signal may never
-               // happen.
+        // Any immediate or delayed pending task (or request to shutdown the thread)
+        // must always be added to the queue prior to signaling flag_notify_ to wake
+        // up the possibly sleeping thread. This prevents a race condition where the
+        // thread is notified to wake up but the task queue's thread finds nothing to
+        // do so it waits once again to be signaled where such a signal may never
+        // happen.
         flag_notify_.Set();
     }
 }
