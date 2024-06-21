@@ -2,20 +2,20 @@
 
 ### 1.Main Features
 #### a.Supported Connection Types
-![connection_types@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/7be1867b-ef78-480e-aac4-feced8652168)
+![connection_types](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/f328c1a9-98ab-4d36-8d5e-b17f4b64e777)
 
 #### b.Supported Slot Types
-![slot_types@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/615c03ce-cded-48be-8779-11068a52e3bb)
+![slot_types](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/cf59b4ae-3b2f-45fe-a27d-bc9120c514d4)
 
 #### c.Slots Execution Order
-![slot_executions_order](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/e925fbf6-bd0f-4f07-aa66-7d5749349426)
+![exection_order](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/cfb93013-8235-4c0b-a282-279eae16307f)
 
 ### 2.Paramaters Copy Times
 #### a.Pass By Value
-![pass_by_value@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/bc994b4c-3cad-4d92-a9d2-3ce15f65d0d0)
+![pass_by_value](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/60e3f2f3-a52f-41f9-a488-fa26e0c1fe98)
 
 #### b.Pass By Reference
-![pass_by_reference@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/7a981cec-307b-40c6-8d13-7cfd43ee98f7)
+![pass_by_reference](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/d6a9209c-b78a-480d-b9ff-0860f8c2ad65)
 
 ### 3.Performance
 #### a.Test environment:
@@ -34,10 +34,10 @@
 
 #### b.Test Cases
 ##### Member Functions:
-![performance_memer_function@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/f621b18c-e201-4e5b-9a5d-da73ca6b967d)
+![member_function](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/405534f6-e353-426c-9868-3e26b4160c37)
 
 ##### Lambda:
-![performance_lambda@2x](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/aa483447-f65b-4ae6-bd36-ea34feab0393)
+![lambda](https://github.com/ouxianghui/signal-slot-cpp/assets/4726906/415c84e3-6c04-42fa-8265-ed687e39aba2)
 
 ### 4.Examples
 
