@@ -17,7 +17,7 @@ namespace core {
     class TaskQueueStdlib final : public TaskQueueBase {
     public:
         TaskQueueStdlib(std::string_view queue_name);
-        ~TaskQueueStdlib() override = default;
+        ~TaskQueueStdlib() override;
 
         void Delete() override;
         void PostTask(std::unique_ptr<QueuedTask> task) override;

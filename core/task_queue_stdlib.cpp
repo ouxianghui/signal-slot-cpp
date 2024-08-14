@@ -17,6 +17,12 @@ namespace core {
         started_.Wait(Event::kForever);
     }
 
+    TaskQueueStdlib::~TaskQueueStdlib() {
+        if (thread_.joinable()) {
+            thread_.join();
+        }
+    }
+
     void TaskQueueStdlib::Delete() {
         assert(!IsCurrent());
 

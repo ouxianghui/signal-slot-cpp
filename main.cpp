@@ -1,137 +1,86 @@
+// class MyClass : public sigslot::observer {
+// public:
+//     ~MyClass() {
+//         // Needed to ensure proper disconnection prior to object destruction
+//         // in multithreaded contexts.
+//         this->disconnect_all();
+//     }
+
+//     MyClass() {
+
+//     }
+
+//     void sum(int a, int b) {
+//         std::cout << "a + b = " << a + b << std::endl;
+//     }
+
+//     void test() {
+
+//     }
+// };
+
+
 #include <iostream>
+#include <list>
+#include <memory>
 #include "signal.hpp"
 #include "core/task_queue.h"
 #include "core/task_queue_manager.h"
 
-using namespace std;
-
-class MyParam {
-public:
-    ~MyParam() {
-
-    }
-
-    MyParam() {
-
-    }
-
-    MyParam(const MyParam& m) {
-        std::cout << "MyParam copy" << std::endl;
-    }
-
-    MyParam& operator=(const MyParam&) {
-        std::cout << "MyParam assign copy" << std::endl;
-        return *this;
-    }
-
-    MyParam(MyParam&& m) {
-        std::cout << "MyParam move" << std::endl;
-    }
-
-    MyParam& operator=(MyParam&&) {
-        std::cout << "MyParam assign move" << std::endl;
-        return *this;
-    }
-
+struct DeviceInfo {
+    std::string deviceId;
+    std::string deviceName;
 };
 
-class MyClass : public sigslot::observer {
+class UiController : public std::enable_shared_from_this<UiController> {
 public:
-    ~MyClass() {
-        // Needed to ensure proper disconnection prior to object destruction
-        // in multithreaded contexts.
-        this->disconnect_all();
-    }
+    ~UiController() {}
 
-    MyClass() {
-
-    }
-
-    void sum(int a, int b) {
-        std::cout << "a + b = " << a + b << std::endl;
-    }
-
-    void test() {
-
+    void onDevicePlugged(const std::shared_ptr<DeviceInfo>& info) {
+        std::cout << "onDevicePlugged: " << info->deviceName << std::endl;
     }
 };
 
-class MySharedClass : public std::enable_shared_from_this<MySharedClass> {
+class DeviceController {
 public:
-    ~MySharedClass() {}
+    std::list<std::shared_ptr<DeviceInfo>> getDeviceList();
 
-    void sum(int a, int b) {
-        std::cout << "a + b = " << a + b << std::endl;
+    void mockCallback() {
+        auto deviceInfo = std::make_shared<DeviceInfo>();
+        deviceInfo->deviceId = "uuid-12345678900987654321";
+        deviceInfo->deviceName = "microphone";
+        onDeviceEventTriggered(deviceInfo);
     }
-};
+private:
+    void onDeviceEventTriggered(const std::shared_ptr<DeviceInfo>& info) {
+        pluggedSignal(info);
+    }
 
-void func(MyParam p){
-    cout << "Hello World!"<< endl;
-}
+public:
+    sigslot::signal<const std::shared_ptr<DeviceInfo>&> pluggedSignal;
+};
 
 int main()
 {
+    // create a task queue
     TQMgr->create({"worker"});
 
-    sigslot::signal<> sig;
+    // example 1
+    auto ui = std::make_shared<UiController>();
+    auto dc = std::make_shared<DeviceController>();
+    dc->pluggedSignal.connect(ui.get(), &UiController::onDevicePlugged, sigslot::connection_type::queued_connection, TQ("worker"));
 
-    MyClass myc;
-    sig.connect(&myc, &MyClass::test, sigslot::queued_connection, TQ("worker"));
+    dc->mockCallback();
 
-    auto start = std::chrono::steady_clock::now();
 
-    const int32_t times = 1000000;
+    // expamle 2
+    sigslot::signal<int> printSignal;
 
-    for (int i = 0; i < times; ++i) {
-         sig();
-    }
+    printSignal.connect([](int x){
+        std::cout << "Hello World: " << x << std::endl;
+    }, sigslot::connection_type::blocking_queued_connection, TQ("worker"));
 
-    auto end = std::chrono::steady_clock::now();
-
-    double duration_millsecond = std::chrono::duration<double, std::milli>(end - start).count();
-    std::cout << duration_millsecond << "ms" << std::endl;
-
-    // sigslot::signal<MyParam> sig;
-
-    // sig.connect(func, sigslot::queued_connection, TQ("worker"));
-
-    // MyParam param;
-    // sig(param);
-
-    // MyClass myc;
-
-    // sigslot::signal<int, int> sum;
-
-    // sum.connect(&myc, &MyClass::sum, sigslot::queued_connection, TQ("worker"));
-
-    // sum(3, 5);
-
-    // sum.disconnect_all();
-
-    // MySharedClass mysc;
-
-    // sum.connect(&mysc, &MySharedClass::sum, sigslot::blocking_queued_connection, TQ("worker"));
-
-    // sum(3, 7);
-
-    // sum.disconnect_all();
-
-    // sum.connect_extended([](sigslot::connection& conn, int a, int b){
-    //     conn.disconnect();
-    //     std::cout << "connect_extended, a + b = " << a + b << std::endl;
-    // });
-
-    // sum(1, 2);
-
-    // {
-    //     auto soped_connection = sum.connect_scoped([](int a, int b){
-    //         std::cout << "connect_scoped, a + b = " << a + b << std::endl;
-    //     });
-    // }
-
-    // sum(2, 3);
-
-    std::this_thread::sleep_for(std::chrono::seconds(300));
+    printSignal(5);
 
     return 0;
 }
