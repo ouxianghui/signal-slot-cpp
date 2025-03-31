@@ -1221,7 +1221,7 @@ namespace sigslot {
         template <typename Ptr, typename Pmf, typename... Args>
         class slot_pmf_extended final : public slot_base<Args...>, public std::enable_shared_from_this<slot_pmf_extended<Ptr, Pmf, Args...>> {
         public:
-            using this_type = slot_pmf_extended<Pmf, Ptr, Args...>;
+            using this_type = slot_pmf_extended<Ptr, Pmf, Args...>;
             template <typename P, typename F>
             constexpr slot_pmf_extended(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* executor, group_id gid)
             : slot_base<Args...>(c, type, executor, gid)
@@ -1731,8 +1731,8 @@ namespace sigslot {
         template <typename Ptr, typename Pmf>
         std::enable_if_t<trait::is_callable_v<ext_arg_list, Ptr, Pmf> &&
                              !trait::is_weak_ptr_compatible_v<Ptr>, connection>
-        connect_extended(Pmf&& pmf, Ptr&& ptr, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
-            using slot_t = detail::slot_pmf_extended<Pmf, Ptr, T...>;
+        connect_extended(Ptr&& ptr, Pmf&& pmf, uint32_t type = connection_type::direct_connection, core::TaskQueue* queue = nullptr, group_id gid = 0) {
+            using slot_t = detail::slot_pmf_extended<Ptr, Pmf, T...>;
             auto s = make_slot<slot_t>(std::forward<Ptr>(ptr), std::forward<Pmf>(pmf), type, queue, gid);
             auto o = get_slot([&](const auto& slot) {
                 return slot->has_object(ptr) && slot->has_callable(pmf);
