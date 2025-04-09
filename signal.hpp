@@ -1300,7 +1300,7 @@ namespace sigslot {
         template <typename WeakPtr, typename Func, typename... Args>
         class slot_tracked final : public slot_base<Args...>, public std::enable_shared_from_this<slot_tracked<WeakPtr, Func, Args...>> {
         public:
-            using this_type = slot_tracked<Func, WeakPtr, Args...>;
+            using this_type = slot_tracked<WeakPtr, Func, Args...>;
             template <typename P, typename F>
             constexpr slot_tracked(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
             : slot_base<Args...>(c, type, queue, gid)
@@ -1399,7 +1399,7 @@ namespace sigslot {
         template <typename WeakPtr, typename Pmf, typename... Args>
         class slot_pmf_tracked final : public slot_base<Args...>, public std::enable_shared_from_this<slot_pmf_tracked<WeakPtr, Pmf, Args...>> {
         public:
-            using this_type = slot_pmf_tracked<Pmf, WeakPtr, Args...>;
+            using this_type = slot_pmf_tracked<WeakPtr, Pmf, Args...>;
             template <typename P, typename F>
             constexpr slot_pmf_tracked(cleanable& c, P&& p, F&& f, uint32_t type, core::TaskQueue* queue, group_id gid)
             : slot_base<Args...>(c, type, queue, gid)
